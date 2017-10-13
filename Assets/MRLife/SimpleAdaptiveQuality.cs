@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -11,12 +11,12 @@ public class SimpleAdaptiveQuality : MonoBehaviour
     [Range(60, 90)]
     public float initialTargetFramerate = 90;
 
-    [Range(2, 50)]
+    [Range(1, 50)]
     public float maximumTriesToGoUp = 5;
 
     [Range(1f, 10f)]
     public float downFramerateThreshold = 2.0f;
-    [Range(0.1f, 0.9f)]
+    [Range(0.05f, 0.9f)]
     public float upFramerateThreshold = 0.5f;
 
     public event Action<SimpleAdaptiveQuality, int, int> qualityLevelChanged;
