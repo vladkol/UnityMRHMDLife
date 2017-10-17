@@ -19,11 +19,14 @@ public class SimpleAdaptiveQuality : MonoBehaviour
     [Range(0.05f, 0.9f)]
     public float upFramerateThreshold = 0.5f;
 
+    public bool saveAndRestoreOnLoad = true;
+
     public event Action<SimpleAdaptiveQuality, int, int> qualityLevelChanged;
 
     public TextMesh qualityDebugText;
 
     private bool workingInstance = false;
+    private bool inFocus = true;
     private float targetFramerate = 90;
     private float startTime = 0;
     private float rateChangeStart = 0;
@@ -70,7 +73,10 @@ public class SimpleAdaptiveQuality : MonoBehaviour
         targetFramerate = initialTargetFramerate;
 
         initialLevel = QualitySettings.GetQualityLevel();
-        QualitySettings.SetQualityLevel(PlayerPrefs.GetInt("MRQualityLevel", initialLevel), true);
+        if (saveAndRestoreOnLoad)
+        {
+            QualitySettings.SetQualityLevel(PlayerPrefs.GetInt("MRQualityLevel", initialLevel), true);
+        }
 
 #if UNITY_2017_2_OR_NEWER
         bool isXR = UnityEngine.XR.XRSettings.enabled;
@@ -133,8 +139,12 @@ public class SimpleAdaptiveQuality : MonoBehaviour
                 return;
 
             triedToGoUp = 0;
-            PlayerPrefs.SetInt("MRQualityLevel", QualitySettings.GetQualityLevel());
-            PlayerPrefs.Save();
+
+            if (saveAndRestoreOnLoad)
+            {
+                PlayerPrefs.SetInt("MRQualityLevel", QualitySettings.GetQualityLevel());
+                PlayerPrefs.Save();
+            }
 
             _instance = null;
         }
@@ -149,6 +159,7 @@ public class SimpleAdaptiveQuality : MonoBehaviour
         if (!workingInstance)
             return;
 
+        inFocus = true;
         startTime = Time.unscaledTime;
 
         var currentLevel = QualitySettings.GetQualityLevel();
@@ -159,7 +170,7 @@ public class SimpleAdaptiveQuality : MonoBehaviour
 
     void LateUpdate ()
     {
-        if (!workingInstance)
+        if (!workingInstance || !inFocus)
             return;
 
         if ((Time.unscaledTime - startTime) < startupTime)
@@ -246,6 +257,32 @@ public class SimpleAdaptiveQuality : MonoBehaviour
         }
     }
 
+
+    void OnApplicationPause(bool pause)
+    {
+#if !UNITY_EDITOR
+        inFocus = !pause;
+#endif
+
+        if (false == pause)
+        {
+            ResetStartTime();
+        }
+    }
+
+    void OnApplicationFocus(bool hasFocus)
+    {
+#if !UNITY_EDITOR
+        inFocus = hasFocus;
+#endif
+
+        if (hasFocus)
+        {
+            ResetStartTime();
+        }
+    }
+
+
     private float GetFramerate()
     {
         float lastValue = 1f / Time.unscaledDeltaTime;
@@ -266,5 +303,10 @@ public class SimpleAdaptiveQuality : MonoBehaviour
         }
 
         return lastValue;
+    }
+
+    private void ResetStartTime()
+    {
+        startTime = Time.unscaledTime;
     }
 }
